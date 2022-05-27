@@ -1,4 +1,4 @@
-name: trojan-go build
+name: trojango build
 on:
   push:
     tags:
