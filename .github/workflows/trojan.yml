@@ -1,0 +1,51 @@
+name: trojan-go build
+on:
+  push:
+    tags:
+      - 0.*
+  workflow_dispatch:
+  
+  jobs:
+  release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GAYHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          draft: true # Release草稿
+          prerelease: true # 预览版
+  linuxs390xbuild:
+    name: build trojan-go s390x version
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.18
+      - name: build linux s390x version
+        run: |
+          sudo apt-get update
+          sudo apt install gcc-s390x-linux-gnu -y
+          CGO_ENABLED=1 GOOS=linux GOARCH=s390x CC=s390x-linux-gnu-gcc go build -o trojan-go-release -v main.go
+      - name: package
+        run: tar -zcvf trojan-go-linux-s390x.tar.gz trojan-go
+      - name: upload
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GAYHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.release.outputs.upload_url }}
+          asset_path: trojan-go-linux-s390x.tar.gz # 发布的压缩包名称
+          asset_name: trojan-go-linux-s390x.tar.gz # 发布的压缩包名称
+          asset_content_type: application/gzip
+
+      
